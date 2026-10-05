@@ -43,10 +43,12 @@
 
     /* Emplacement du logo */
     .logo {
-      max-width: 130px;
+      width: 130px;
+      max-width: 100%;
       height: auto;
       margin-bottom: 12px;
       filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+      display: block;
     }
 
     h1 {
@@ -137,8 +139,8 @@
 <body>
 
   <header>
-    <!-- Remplace "logo.png" par le nom de ton image -->
-    <img src="logo.png" alt="Logo" class="logo">
+    <!-- Balise mise à jour avec vérification d'erreur -->
+    <img src="logo.png" alt="Logo Defibooth" class="logo" onerror="console.error('Image non trouvée : vérifiez que logo.png est bien présent à la racine du dépôt GitHub.');">
     <h1>Défis Photobooth</h1>
     <p class="subtitle">Seras-tu prêt(e) à relever le défi ?</p>
   </header>
