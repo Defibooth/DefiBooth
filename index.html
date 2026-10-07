@@ -1,212 +1,306 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Défis Photobooth</title>
-  
-  <!-- Polices élégantes Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
-  
-  <!-- Script Confetti -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#000000">
+<title>Filtre Photo</title>
+<style>
+  :root {
+    --accent: #e8a6b6;      /* rose poudré */
+    --accent-dark: #c97b8f;
+    --text: #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: #000; color: var(--text); font-family: Georgia, "Times New Roman", serif; overflow: hidden; }
 
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+  #stage { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+  #video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  #video.mirror { transform: scaleX(-1); }
+  #overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 
-    body {
-      font-family: 'Montserrat', sans-serif;
-      /* Fond chic sombre : Nuit & Prune profond */
-      background: radial-gradient(circle at top, #231929 0%, #0d0a10 100%);
-      color: #fceee9;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-between;
-      min-height: 100vh;
-      padding: 25px 15px;
-      text-align: center;
-    }
+  #controls {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    padding: 18px 24px calc(18px + env(safe-area-inset-bottom));
+    display: flex; align-items: center; justify-content: space-between; z-index: 5;
+  }
+  .round {
+    width: 52px; height: 52px; border-radius: 50%; border: none;
+    background: rgba(0,0,0,.45); color: #fff; font-size: 22px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #shutter {
+    width: 78px; height: 78px; border-radius: 50%; cursor: pointer;
+    border: 5px solid #fff; background: var(--accent);
+    box-shadow: 0 0 0 4px rgba(0,0,0,.25);
+    transition: transform .1s;
+  }
+  #shutter:active { transform: scale(.9); }
 
-    header {
-      margin-top: 10px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
+  #flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 8; transition: opacity .35s; }
+  #countdown { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; font-size: 140px; z-index: 7; text-shadow: 0 4px 20px rgba(0,0,0,.6); pointer-events: none; }
 
-    /* Emplacement du logo */
-    .logo {
-      width: 130px;
-      max-width: 100%;
-      height: auto;
-      margin-bottom: 12px;
-      filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
-      display: block;
-    }
+  /* Écran de résultat */
+  #result {
+    position: fixed; inset: 0; background: #111; z-index: 10; display: none;
+    flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+    padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+  }
+  #result img { max-width: 100%; max-height: 72vh; border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,.6); }
+  #result .hint { font-size: 14px; opacity: .75; text-align: center; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .btn {
+    border: none; border-radius: 30px; padding: 14px 24px; font-size: 16px; font-family: inherit; cursor: pointer;
+    background: var(--accent); color: #fff; font-weight: bold;
+  }
+  .btn.secondary { background: rgba(255,255,255,.15); }
 
-    h1 {
-      font-family: 'Playfair Display', serif;
-      font-size: 2.2rem;
-      font-weight: 700;
-      letter-spacing: 1px;
-      /* Dégradé doré / Champagne */
-      background: linear-gradient(135deg, #f3e7e1 0%, #d4af37 50%, #fdfcfb 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 0px 4px 15px rgba(212, 175, 55, 0.2);
-    }
-
-    .subtitle {
-      font-size: 0.95rem;
-      font-weight: 400;
-      color: rgba(252, 238, 233, 0.75);
-      margin-top: 6px;
-      font-style: italic;
-    }
-
-    .card-container {
-      width: 100%;
-      max-width: 350px;
-      height: 240px;
-      margin: 20px 0;
-    }
-
-    /* Carte au style verre dépoli & bordure dorée */
-    .card {
-      width: 100%;
-      height: 100%;
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(212, 175, 55, 0.4);
-      border-radius: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 25px;
-      font-size: 1.25rem;
-      font-weight: 600;
-      line-height: 1.5;
-      color: #ffffff;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 0 15px rgba(212, 175, 55, 0.05);
-      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
-    .card.stopped {
-      transform: scale(1.03);
-      border-color: rgba(212, 175, 55, 0.9);
-      box-shadow: 0 0 25px rgba(212, 175, 55, 0.3), inset 0 0 20px rgba(212, 175, 55, 0.1);
-    }
-
-    /* Bouton principal */
-    button {
-      width: 100%;
-      max-width: 300px;
-      padding: 16px 0;
-      font-family: 'Montserrat', sans-serif;
-      font-size: 1.1rem;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: #0d0a10;
-      /* Gradient doré chic */
-      background: linear-gradient(135deg, #d4af37 0%, #f3e7e1 50%, #b89726 100%);
-      border: none;
-      border-radius: 50px;
-      cursor: pointer;
-      box-shadow: 0 6px 20px rgba(212, 175, 55, 0.25);
-      transition: all 0.3s ease;
-      margin-bottom: 15px;
-    }
-
-    button:hover {
-      box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
-      transform: translateY(-2px);
-    }
-
-    button:active {
-      transform: scale(0.97);
-    }
-  </style>
+  /* Écran de démarrage / erreur */
+  #start {
+    position: fixed; inset: 0; z-index: 20; background: linear-gradient(160deg, #fff5f7, #f3dbe1);
+    color: #5a3b44; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 20px; padding: 30px; text-align: center;
+  }
+  #start h1 { font-size: 30px; font-weight: normal; }
+  #start p { font-size: 16px; max-width: 320px; line-height: 1.45; }
+  #start .err { color: #b03a50; font-size: 14px; }
+  #start.hidden { display: none; }
+</style>
 </head>
 <body>
 
-  <header>
-    <!-- Balise mise à jour avec vérification d'erreur -->
-    <img src="logo.png" alt="Logo Defibooth" class="logo" onerror="console.error('Image non trouvée : vérifiez que logo.png est bien présent à la racine du dépôt GitHub.');">
-    <h1>Défis Photobooth</h1>
-    <p class="subtitle">Seras-tu prêt(e) à relever le défi ?</p>
-  </header>
+<div id="start">
+  <h1>📸 Notre filtre photo</h1>
+  <p id="startMsg">Autorise l'accès à l'appareil photo pour prendre ta photo avec le filtre.</p>
+  <button class="btn" id="startBtn">Ouvrir l'appareil photo</button>
+  <p class="err" id="startErr"></p>
+</div>
 
-  <div class="card-container">
-    <div class="card" id="card">Touche le bouton pour lancer</div>
+<div id="stage">
+  <video id="video" autoplay playsinline muted></video>
+  <canvas id="overlay"></canvas>
+</div>
+
+<div id="countdown"></div>
+<div id="flash"></div>
+
+<div id="controls">
+  <button class="round" id="timerBtn" title="Retardateur">⏱️</button>
+  <button id="shutter" aria-label="Prendre la photo"></button>
+  <button class="round" id="switchBtn" title="Changer de caméra">🔄</button>
+</div>
+
+<div id="result">
+  <img id="photo" alt="Ta photo">
+  <p class="hint" id="saveHint">Appuie sur « Enregistrer » pour garder ta photo.</p>
+  <div class="row">
+    <button class="btn secondary" id="retakeBtn">Reprendre</button>
+    <button class="btn" id="saveBtn">Enregistrer</button>
   </div>
+</div>
 
-  <button id="actionBtn" onclick="toggleLoop()">LANCER</button>
+<script>
+/* =========================================================
+   CONFIGURATION DU FILTRE — à personnaliser selon le thème
+   ========================================================= */
+const CONFIG = {
+  // Option 1 : ton propre filtre en image PNG transparente (format portrait conseillé, ex. 1080x1920).
+  // Mets le nom du fichier (ex. "filtre.png") placé à côté de cette page. Laisse "" pour utiliser le cadre dessiné ci-dessous.
+  overlayImage: "",
 
-  <script>
-    const defis = [
-      "Fais une grimace hilarante !",
-      "Prends une photo avec le DJ",
-      "Prends une photo avec ton meilleur profil",
-      "Prends une photo que tu n'oserais pas publier sur les réseaux",
-      "Prends une photo amusante avec 3 personnes",
-      "Prends une photo avec l'air dégoûté d'être là",
-      "Imite la pose d'une statue célèbre",
-      "Fais ta plus belle pose de mannequin sur tapis rouge"
-    ];
+  // Option 2 : cadre dessiné automatiquement
+  titre: "Camille & Julien",
+  sousTitre: "12 juin 2027",
+  couleurCadre: "#e8a6b6",
+  couleurTexte: "#ffffff",
+  emojis: ["🤍", "💍", "🥂", "✨"],
 
-    let intervalId = null;
-    let isRunning = false;
-    let lastIndex = -1;
-    const card = document.getElementById('card');
-    const btn = document.getElementById('actionBtn');
+  nomFichier: "photo-mariage",
+  cameraParDefaut: "user"   // "user" = selfie, "environment" = caméra arrière
+};
+/* ========================================================= */
 
-    function toggleLoop() {
-      if (isRunning) {
-        clearInterval(intervalId);
-        isRunning = false;
-        btn.innerText = "RECOMMENCER";
-        btn.style.background = "linear-gradient(135deg, #d4af37 0%, #f3e7e1 50%, #b89726 100%)";
-        btn.style.color = "#0d0a10";
-        card.classList.add('stopped');
-        
-        // Confettis dorés & blanc chic
-        if (typeof confetti === "function") {
-          confetti({
-            particleCount: 80,
-            spread: 70,
-            origin: { y: 0.65 },
-            colors: ['#d4af37', '#ffffff', '#f3e7e1']
-          });
-        }
-      } else {
-        card.classList.remove('stopped');
-        isRunning = true;
-        btn.innerText = "STOP !";
-        /* Bouton rouge/rosé chic lors du stop */
-        btn.style.background = "linear-gradient(135deg, #a32a48 0%, #e05275 100%)";
-        btn.style.color = "#ffffff";
-        
-        intervalId = setInterval(() => {
-          let randomIndex;
-          do {
-            randomIndex = Math.floor(Math.random() * defis.length);
-          } while (randomIndex === lastIndex && defis.length > 1);
-          
-          lastIndex = randomIndex;
-          card.innerText = defis[randomIndex];
-        }, 60);
-      }
-    }
-  </script>
+const video = document.getElementById('video');
+const overlay = document.getElementById('overlay');
+const startEl = document.getElementById('start');
+const startErr = document.getElementById('startErr');
+let facing = CONFIG.cameraParDefaut;
+let stream = null;
+let timerOn = false;
+let overlayImg = null;
 
+if (CONFIG.overlayImage) {
+  overlayImg = new Image();
+  overlayImg.onload = drawOverlay;
+  overlayImg.src = CONFIG.overlayImage;
+}
+
+/* ---------- Caméra ---------- */
+async function startCamera() {
+  startErr.textContent = "";
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showStart("Ton navigateur ne permet pas l'accès à la caméra. Ouvre la page dans Safari ou Chrome (et en https).");
+    return;
+  }
+  try {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      audio: false
+    });
+    video.srcObject = stream;
+    video.classList.toggle('mirror', facing === 'user');
+    await video.play();
+    startEl.classList.add('hidden');
+    drawOverlay();
+  } catch (e) {
+    let msg = "Impossible d'ouvrir la caméra.";
+    if (e.name === 'NotAllowedError') msg = "Accès refusé. Autorise la caméra dans les réglages du navigateur, puis réessaie.";
+    if (e.name === 'NotFoundError') msg = "Aucune caméra trouvée sur cet appareil.";
+    showStart(msg);
+  }
+}
+function showStart(err) {
+  startEl.classList.remove('hidden');
+  startErr.textContent = err || "";
+}
+
+/* ---------- Dessin du filtre ---------- */
+function paintFrame(ctx, w, h) {
+  if (overlayImg && overlayImg.complete && overlayImg.naturalWidth) {
+    ctx.drawImage(overlayImg, 0, 0, w, h);
+    return;
+  }
+  const u = Math.min(w, h) / 100;   // unité relative
+  const b = 3.2 * u;                // épaisseur du cadre
+
+  // Cadre
+  ctx.save();
+  ctx.lineWidth = b;
+  ctx.strokeStyle = CONFIG.couleurCadre;
+  ctx.strokeRect(b / 2 + 2 * u, b / 2 + 2 * u, w - b - 4 * u, h - b - 4 * u);
+  ctx.lineWidth = 0.6 * u;
+  ctx.strokeStyle = CONFIG.couleurTexte;
+  ctx.strokeRect(b + 4 * u, b + 4 * u, w - 2 * b - 8 * u, h - 2 * b - 8 * u);
+  ctx.restore();
+
+  // Bandeau du bas
+  const bandH = 22 * u;
+  const grad = ctx.createLinearGradient(0, h - bandH - 8 * u, 0, h);
+  grad.addColorStop(0, 'rgba(0,0,0,0)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.55)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, h - bandH - 8 * u, w, bandH + 8 * u);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = CONFIG.couleurTexte;
+  ctx.shadowColor = 'rgba(0,0,0,.5)';
+  ctx.shadowBlur = 2 * u;
+  ctx.font = `italic ${9 * u}px Georgia, serif`;
+  ctx.fillText(CONFIG.titre, w / 2, h - bandH * 0.62);
+  ctx.font = `${4.5 * u}px Georgia, serif`;
+  ctx.fillText(CONFIG.sousTitre, w / 2, h - bandH * 0.22);
+
+  // Emojis dans les coins
+  ctx.shadowBlur = 0;
+  ctx.font = `${8 * u}px sans-serif`;
+  const e = CONFIG.emojis;
+  const m = b + 10 * u;
+  if (e[0]) ctx.fillText(e[0], m, m + 4 * u);
+  if (e[1]) ctx.fillText(e[1], w - m, m + 4 * u);
+  if (e[2]) ctx.fillText(e[2], m, h - bandH - 6 * u);
+  if (e[3]) ctx.fillText(e[3], w - m, h - bandH - 6 * u);
+}
+
+function drawOverlay() {
+  const dpr = window.devicePixelRatio || 1;
+  overlay.width = overlay.clientWidth * dpr;
+  overlay.height = overlay.clientHeight * dpr;
+  const ctx = overlay.getContext('2d');
+  ctx.clearRect(0, 0, overlay.width, overlay.height);
+  paintFrame(ctx, overlay.width, overlay.height);
+}
+window.addEventListener('resize', drawOverlay);
+
+/* ---------- Prise de photo ---------- */
+function capture() {
+  // On capture exactement ce que voit l'écran (même cadrage que "object-fit: cover")
+  const sw = window.innerWidth, sh = window.innerHeight;
+  const scale = Math.min(2, Math.max(1080 / Math.min(sw, sh), 1));
+  const W = Math.round(sw * scale), H = Math.round(sh * scale);
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+
+  const vw = video.videoWidth, vh = video.videoHeight;
+  const r = Math.max(W / vw, H / vh);
+  const dw = vw * r, dh = vh * r;
+  ctx.save();
+  if (facing === 'user') { ctx.translate(W, 0); ctx.scale(-1, 1); }
+  ctx.drawImage(video, (W - dw) / 2, (H - dh) / 2, dw, dh);
+  ctx.restore();
+
+  paintFrame(ctx, W, H);
+
+  // Flash
+  const f = document.getElementById('flash');
+  f.style.transition = 'none'; f.style.opacity = 1;
+  requestAnimationFrame(() => { f.style.transition = 'opacity .35s'; f.style.opacity = 0; });
+
+  c.toBlob(blob => {
+    lastBlob = blob;
+    document.getElementById('photo').src = URL.createObjectURL(blob);
+    document.getElementById('result').style.display = 'flex';
+  }, 'image/jpeg', 0.92);
+}
+
+let lastBlob = null;
+let counting = false;
+async function shoot() {
+  if (counting || !stream) return;
+  if (timerOn) {
+    counting = true;
+    const cd = document.getElementById('countdown');
+    cd.style.display = 'flex';
+    for (let i = 3; i > 0; i--) { cd.textContent = i; await new Promise(r => setTimeout(r, 1000)); }
+    cd.style.display = 'none';
+    counting = false;
+  }
+  capture();
+}
+
+/* ---------- Enregistrer / partager ---------- */
+async function save() {
+  if (!lastBlob) return;
+  const name = `${CONFIG.nomFichier}-${Date.now()}.jpg`;
+  const file = new File([lastBlob], name, { type: 'image/jpeg' });
+  // Sur smartphone : menu de partage natif (permet "Enregistrer l'image" dans la galerie)
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file] }); return; }
+    catch (e) { if (e.name === 'AbortError') return; }
+  }
+  // Sinon : téléchargement classique
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(lastBlob);
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  document.getElementById('saveHint').textContent = "Si rien ne se passe, reste appuyé sur la photo puis « Enregistrer l'image ».";
+}
+
+/* ---------- Boutons ---------- */
+document.getElementById('startBtn').onclick = startCamera;
+document.getElementById('shutter').onclick = shoot;
+document.getElementById('switchBtn').onclick = () => { facing = facing === 'user' ? 'environment' : 'user'; startCamera(); };
+document.getElementById('timerBtn').onclick = (e) => {
+  timerOn = !timerOn;
+  e.currentTarget.style.background = timerOn ? 'var(--accent)' : 'rgba(0,0,0,.45)';
+};
+document.getElementById('retakeBtn').onclick = () => { document.getElementById('result').style.display = 'none'; };
+document.getElementById('saveBtn').onclick = save;
+
+/* Ouverture automatique de la caméra au chargement
+   (si le navigateur bloque, le bouton "Ouvrir l'appareil photo" reste affiché) */
+startCamera();
+</script>
 </body>
 </html>
