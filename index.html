@@ -3,76 +3,97 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<meta name="theme-color" content="#000000">
-<title>Filtre Photo</title>
+<meta name="theme-color" content="#1a0b24">
+<title>Marché des Sorcières</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --accent: #e8a6b6;      /* rose poudré */
-    --accent-dark: #c97b8f;
-    --text: #ffffff;
+    --orange: #ff7a1a;
+    --orange-glow: #ffb15c;
+    --violet: #2b0f3a;
+    --violet-light: #6b2fa0;
+    --vert: #7dff6a;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  html, body { height: 100%; background: #000; color: var(--text); font-family: Georgia, "Times New Roman", serif; overflow: hidden; }
+  html, body { height: 100%; background: #0b0510; color: #fff; font-family: "Cinzel", Georgia, serif; overflow: hidden; }
 
-  #stage { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+  #stage { position: fixed; inset: 0; }
   #video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   #video.mirror { transform: scaleX(-1); }
   #overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 
   #controls {
-    position: fixed; left: 0; right: 0; bottom: 0;
-    padding: 18px 24px calc(18px + env(safe-area-inset-bottom));
-    display: flex; align-items: center; justify-content: space-between; z-index: 5;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+    padding: 18px 26px calc(22px + env(safe-area-inset-bottom));
+    display: flex; align-items: center; justify-content: space-between;
   }
   .round {
-    width: 52px; height: 52px; border-radius: 50%; border: none;
-    background: rgba(0,0,0,.45); color: #fff; font-size: 22px; cursor: pointer;
+    width: 54px; height: 54px; border-radius: 50%; cursor: pointer;
+    border: 2px solid var(--orange); background: rgba(43,15,58,.75); color: #fff; font-size: 22px;
     display: flex; align-items: center; justify-content: center;
   }
+  .round.on { background: var(--orange); }
   #shutter {
-    width: 78px; height: 78px; border-radius: 50%; cursor: pointer;
-    border: 5px solid #fff; background: var(--accent);
-    box-shadow: 0 0 0 4px rgba(0,0,0,.25);
+    width: 82px; height: 82px; border-radius: 50%; cursor: pointer;
+    border: 4px solid var(--orange); background: radial-gradient(circle at 50% 40%, #3a1450, #12051a);
+    box-shadow: 0 0 18px var(--orange), inset 0 0 12px rgba(255,122,26,.6);
+    font-size: 36px; display: flex; align-items: center; justify-content: center;
     transition: transform .1s;
   }
   #shutter:active { transform: scale(.9); }
 
-  #flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 8; transition: opacity .35s; }
-  #countdown { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; font-size: 140px; z-index: 7; text-shadow: 0 4px 20px rgba(0,0,0,.6); pointer-events: none; }
+  #flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 8; }
+  #countdown {
+    position: fixed; inset: 0; z-index: 7; pointer-events: none; display: none;
+    align-items: center; justify-content: center;
+    font-family: "Creepster", cursive; font-size: 170px; color: var(--orange);
+    text-shadow: 0 0 25px #000, 0 0 40px var(--orange);
+  }
 
-  /* Écran de résultat */
+  /* Écran résultat */
   #result {
-    position: fixed; inset: 0; background: #111; z-index: 10; display: none;
+    position: fixed; inset: 0; z-index: 10; display: none;
     flex-direction: column; align-items: center; justify-content: center; gap: 18px;
     padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+    background: radial-gradient(ellipse at top, #3a1450, #0b0510 70%);
   }
-  #result img { max-width: 100%; max-height: 72vh; border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,.6); }
-  #result .hint { font-size: 14px; opacity: .75; text-align: center; }
+  #result img { max-width: 100%; max-height: 70vh; border-radius: 8px; border: 3px solid var(--orange); box-shadow: 0 0 30px rgba(255,122,26,.45); }
+  #result .hint { font-size: 13px; opacity: .8; text-align: center; max-width: 320px; }
   .row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
   .btn {
-    border: none; border-radius: 30px; padding: 14px 24px; font-size: 16px; font-family: inherit; cursor: pointer;
-    background: var(--accent); color: #fff; font-weight: bold;
+    border: none; border-radius: 30px; padding: 14px 26px; cursor: pointer;
+    font-family: "Cinzel", serif; font-size: 15px; font-weight: 600; letter-spacing: .5px;
+    background: var(--orange); color: #1a0b24; box-shadow: 0 0 14px rgba(255,122,26,.6);
   }
-  .btn.secondary { background: rgba(255,255,255,.15); }
+  .btn.secondary { background: transparent; color: #fff; border: 2px solid var(--violet-light); box-shadow: none; }
 
-  /* Écran de démarrage / erreur */
+  /* Écran d'accueil */
   #start {
-    position: fixed; inset: 0; z-index: 20; background: linear-gradient(160deg, #fff5f7, #f3dbe1);
-    color: #5a3b44; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 20px; padding: 30px; text-align: center;
+    position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 22px; padding: 30px; text-align: center;
+    background: radial-gradient(circle at 50% 18%, #ffe9a8 0 48px, rgba(255,233,168,.15) 50px, transparent 120px),
+                radial-gradient(ellipse at bottom, #4b1a66, #12051a 70%);
   }
-  #start h1 { font-size: 30px; font-weight: normal; }
-  #start p { font-size: 16px; max-width: 320px; line-height: 1.45; }
-  #start .err { color: #b03a50; font-size: 14px; }
+  #start .icons { font-size: 42px; letter-spacing: 8px; margin-top: 70px; }
+  #start h1 { font-family: "Creepster", cursive; font-weight: normal; font-size: 46px; line-height: 1.05; color: var(--orange); text-shadow: 0 0 18px rgba(255,122,26,.7); }
+  #start .date { font-size: 16px; color: var(--vert); letter-spacing: 2px; }
+  #start .lieu { font-size: 14px; color: #ffe9a8; letter-spacing: 1px; margin-top: -14px; }
+  #start p { font-size: 15px; max-width: 300px; line-height: 1.5; opacity: .9; }
+  #start .err { color: #ff8a8a; font-size: 13px; }
   #start.hidden { display: none; }
 </style>
 </head>
 <body>
 
 <div id="start">
-  <h1>📸 Notre filtre photo</h1>
-  <p id="startMsg">Autorise l'accès à l'appareil photo pour prendre ta photo avec le filtre.</p>
-  <button class="btn" id="startBtn">Ouvrir l'appareil photo</button>
+  <div class="icons">🦇🌙🦇</div>
+  <h1 id="startTitle">Marché des Sorcières</h1>
+  <div class="date" id="startDate"></div>
+  <div class="lieu" id="startLieu"></div>
+  <p>Autorise l'appareil photo et viens prendre ta photo ensorcelée…</p>
+  <button class="btn" id="startBtn">🧙 Ouvrir l'appareil photo</button>
   <p class="err" id="startErr"></p>
 </div>
 
@@ -86,7 +107,7 @@
 
 <div id="controls">
   <button class="round" id="timerBtn" title="Retardateur">⏱️</button>
-  <button id="shutter" aria-label="Prendre la photo"></button>
+  <button id="shutter" aria-label="Prendre la photo">🎃</button>
   <button class="round" id="switchBtn" title="Changer de caméra">🔄</button>
 </div>
 
@@ -101,24 +122,20 @@
 
 <script>
 /* =========================================================
-   CONFIGURATION DU FILTRE — à personnaliser selon le thème
+   CONFIGURATION — les seules lignes à modifier
    ========================================================= */
 const CONFIG = {
-  // Option 1 : ton propre filtre en image PNG transparente (format portrait conseillé, ex. 1080x1920).
-  // Mets le nom du fichier (ex. "filtre.png") placé à côté de cette page. Laisse "" pour utiliser le cadre dessiné ci-dessous.
-  overlayImage: "",
-
-  // Option 2 : cadre dessiné automatiquement
-  titre: "Camille & Julien",
-  sousTitre: "12 juin 2027",
-  couleurCadre: "#e8a6b6",
-  couleurTexte: "#ffffff",
-  emojis: ["🤍", "💍", "🥂", "✨"],
-
-  nomFichier: "photo-mariage",
+  titre: "Marché des Sorcières",
+  date: "1er novembre 2026",
+  lieu: "Saint-Chaptes",
+  nomFichier: "marche-des-sorcieres",
   cameraParDefaut: "user"   // "user" = selfie, "environment" = caméra arrière
 };
 /* ========================================================= */
+
+document.getElementById('startTitle').textContent = CONFIG.titre;
+document.getElementById('startDate').textContent = CONFIG.date;
+document.getElementById('startLieu').textContent = CONFIG.lieu;
 
 const video = document.getElementById('video');
 const overlay = document.getElementById('overlay');
@@ -127,19 +144,12 @@ const startErr = document.getElementById('startErr');
 let facing = CONFIG.cameraParDefaut;
 let stream = null;
 let timerOn = false;
-let overlayImg = null;
-
-if (CONFIG.overlayImage) {
-  overlayImg = new Image();
-  overlayImg.onload = drawOverlay;
-  overlayImg.src = CONFIG.overlayImage;
-}
 
 /* ---------- Caméra ---------- */
 async function startCamera() {
   startErr.textContent = "";
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    showStart("Ton navigateur ne permet pas l'accès à la caméra. Ouvre la page dans Safari ou Chrome (et en https).");
+    showStart("Ton navigateur ne permet pas l'accès à la caméra. Ouvre la page dans Safari ou Chrome.");
     return;
   }
   try {
@@ -160,56 +170,118 @@ async function startCamera() {
     showStart(msg);
   }
 }
-function showStart(err) {
-  startEl.classList.remove('hidden');
-  startErr.textContent = err || "";
+function showStart(err) { startEl.classList.remove('hidden'); startErr.textContent = err || ""; }
+
+/* ---------- Dessins Halloween ---------- */
+function spiderWeb(ctx, cx, cy, R, startAngle, u) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,.75)';
+  ctx.lineWidth = 0.35 * u;
+  const spokes = 6, rings = 5;
+  const angles = [];
+  for (let i = 0; i <= spokes; i++) angles.push(startAngle + (Math.PI / 2) * (i / spokes));
+  angles.forEach(a => { ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); ctx.stroke(); });
+  for (let r = 1; r <= rings; r++) {
+    const rr = R * r / rings;
+    ctx.beginPath();
+    for (let i = 0; i < angles.length - 1; i++) {
+      const a1 = angles[i], a2 = angles[i + 1], am = (a1 + a2) / 2;
+      const x1 = cx + Math.cos(a1) * rr, y1 = cy + Math.sin(a1) * rr;
+      const x2 = cx + Math.cos(a2) * rr, y2 = cy + Math.sin(a2) * rr;
+      const xm = cx + Math.cos(am) * rr * 0.86, ym = cy + Math.sin(am) * rr * 0.86;
+      if (i === 0) ctx.moveTo(x1, y1);
+      ctx.quadraticCurveTo(xm, ym, x2, y2);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
-/* ---------- Dessin du filtre ---------- */
-function paintFrame(ctx, w, h) {
-  if (overlayImg && overlayImg.complete && overlayImg.naturalWidth) {
-    ctx.drawImage(overlayImg, 0, 0, w, h);
-    return;
-  }
-  const u = Math.min(w, h) / 100;   // unité relative
-  const b = 3.2 * u;                // épaisseur du cadre
-
-  // Cadre
+function emoji(ctx, char, x, y, size, rot = 0) {
   ctx.save();
-  ctx.lineWidth = b;
-  ctx.strokeStyle = CONFIG.couleurCadre;
-  ctx.strokeRect(b / 2 + 2 * u, b / 2 + 2 * u, w - b - 4 * u, h - b - 4 * u);
-  ctx.lineWidth = 0.6 * u;
-  ctx.strokeStyle = CONFIG.couleurTexte;
-  ctx.strokeRect(b + 4 * u, b + 4 * u, w - 2 * b - 8 * u, h - 2 * b - 8 * u);
+  ctx.translate(x, y); ctx.rotate(rot);
+  ctx.font = `${size}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(char, 0, 0);
+  ctx.restore();
+}
+
+function paintFrame(ctx, w, h) {
+  const u = Math.min(w, h) / 100;
+
+  // Brume violette en haut et en bas
+  let g = ctx.createLinearGradient(0, 0, 0, h * 0.28);
+  g.addColorStop(0, 'rgba(26,8,40,.92)'); g.addColorStop(1, 'rgba(26,8,40,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, w, h * 0.28);
+  g = ctx.createLinearGradient(0, h, 0, h * 0.72);
+  g.addColorStop(0, 'rgba(20,40,10,.75)'); g.addColorStop(0.4, 'rgba(26,8,40,.45)'); g.addColorStop(1, 'rgba(26,8,40,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, h * 0.72, w, h * 0.28);
+
+  // Cadre orange lumineux
+  ctx.save();
+  ctx.strokeStyle = '#ff7a1a';
+  ctx.shadowColor = '#ff7a1a'; ctx.shadowBlur = 3 * u;
+  ctx.lineWidth = 1.4 * u;
+  const m = 3 * u;
+  ctx.beginPath();
+  ctx.roundRect ? ctx.roundRect(m, m, w - 2 * m, h - 2 * m, 4 * u) : ctx.rect(m, m, w - 2 * m, h - 2 * m);
+  ctx.stroke();
   ctx.restore();
 
-  // Bandeau du bas
-  const bandH = 22 * u;
-  const grad = ctx.createLinearGradient(0, h - bandH - 8 * u, 0, h);
-  grad.addColorStop(0, 'rgba(0,0,0,0)');
-  grad.addColorStop(1, 'rgba(0,0,0,0.55)');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, h - bandH - 8 * u, w, bandH + 8 * u);
+  // Toiles d'araignée dans les coins du haut
+  spiderWeb(ctx, m, m, 26 * u, 0, u);
+  spiderWeb(ctx, w - m, m, 26 * u, Math.PI / 2, u);
+  // Araignée qui pend
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 0.3 * u;
+  ctx.beginPath(); ctx.moveTo(w - 16 * u, m); ctx.lineTo(w - 16 * u, 38 * u); ctx.stroke();
+  ctx.restore();
+  emoji(ctx, '🕷️', w - 16 * u, 41 * u, 7 * u);
 
-  ctx.textAlign = 'center';
-  ctx.fillStyle = CONFIG.couleurTexte;
-  ctx.shadowColor = 'rgba(0,0,0,.5)';
-  ctx.shadowBlur = 2 * u;
-  ctx.font = `italic ${9 * u}px Georgia, serif`;
-  ctx.fillText(CONFIG.titre, w / 2, h - bandH * 0.62);
-  ctx.font = `${4.5 * u}px Georgia, serif`;
-  ctx.fillText(CONFIG.sousTitre, w / 2, h - bandH * 0.22);
+  // Lune + chauves-souris
+  ctx.save();
+  const moonX = w / 2, moonY = 13 * u, moonR = 8 * u;
+  const mg = ctx.createRadialGradient(moonX, moonY, moonR * 0.2, moonX, moonY, moonR * 2.4);
+  mg.addColorStop(0, 'rgba(255,236,170,.55)'); mg.addColorStop(1, 'rgba(255,236,170,0)');
+  ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(moonX, moonY, moonR * 2.4, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ffe9a8'; ctx.beginPath(); ctx.arc(moonX, moonY, moonR, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+  emoji(ctx, '🧙‍♀️', moonX + 1 * u, moonY + 0.5 * u, 9 * u, -0.15);
+  emoji(ctx, '🦇', w * 0.28, 9 * u, 6 * u, -0.3);
+  emoji(ctx, '🦇', w * 0.72, 7 * u, 5 * u, 0.25);
+  emoji(ctx, '🦇', w * 0.36, 19 * u, 4 * u, 0.15);
 
-  // Emojis dans les coins
-  ctx.shadowBlur = 0;
-  ctx.font = `${8 * u}px sans-serif`;
-  const e = CONFIG.emojis;
-  const m = b + 10 * u;
-  if (e[0]) ctx.fillText(e[0], m, m + 4 * u);
-  if (e[1]) ctx.fillText(e[1], w - m, m + 4 * u);
-  if (e[2]) ctx.fillText(e[2], m, h - bandH - 6 * u);
-  if (e[3]) ctx.fillText(e[3], w - m, h - bandH - 6 * u);
+  // Titre
+  ctx.save();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  let size = 11 * u;
+  ctx.font = `${size}px "Creepster", cursive`;
+  while (ctx.measureText(CONFIG.titre).width > w * 0.86 && size > 4 * u) { size -= 0.5 * u; ctx.font = `${size}px "Creepster", cursive`; }
+  const titleY = moonY + moonR + 3 * u + size;
+  ctx.lineWidth = 1 * u; ctx.strokeStyle = '#1a0828'; ctx.strokeText(CONFIG.titre, w / 2, titleY);
+  ctx.shadowColor = '#ff7a1a'; ctx.shadowBlur = 3 * u;
+  ctx.fillStyle = '#ff7a1a'; ctx.fillText(CONFIG.titre, w / 2, titleY);
+
+  // Date
+  ctx.shadowColor = 'rgba(0,0,0,.8)'; ctx.shadowBlur = 1.5 * u;
+  ctx.font = `600 ${4.6 * u}px "Cinzel", serif`;
+  ctx.fillStyle = '#7dff6a';
+  ctx.fillText('✦ ' + CONFIG.date + ' ✦', w / 2, titleY + 7 * u);
+  ctx.font = `600 ${3.8 * u}px "Cinzel", serif`;
+  ctx.fillStyle = '#ffe9a8';
+  ctx.fillText(CONFIG.lieu, w / 2, titleY + 12.5 * u);
+  ctx.restore();
+
+  // Bas : citrouilles, chaudron, bougies, balai
+  const by = h - 7 * u;
+  emoji(ctx, '🎃', 11 * u, by - 2 * u, 13 * u, -0.1);
+  emoji(ctx, '🎃', 22 * u, by + 1 * u, 8 * u, 0.15);
+  emoji(ctx, '🕯️', 30 * u, by - 1 * u, 6 * u);
+  emoji(ctx, '🎃', w - 11 * u, by - 2 * u, 13 * u, 0.1);
+  emoji(ctx, '🧪', w - 22 * u, by, 7 * u, -0.2);
+  emoji(ctx, '🕯️', w - 30 * u, by - 1 * u, 6 * u);
+  emoji(ctx, '🧹', 7 * u, h * 0.55, 8 * u, -0.6);
+  emoji(ctx, '🔮', w - 8 * u, h * 0.6, 7 * u);
 }
 
 function drawOverlay() {
@@ -221,10 +293,17 @@ function drawOverlay() {
   paintFrame(ctx, overlay.width, overlay.height);
 }
 window.addEventListener('resize', drawOverlay);
+// Redessine une fois les polices chargées
+if (document.fonts) {
+  Promise.all([document.fonts.load('40px "Creepster"'), document.fonts.load('600 20px "Cinzel"')])
+    .then(drawOverlay).catch(() => {});
+}
 
 /* ---------- Prise de photo ---------- */
+let lastBlob = null;
+let counting = false;
+
 function capture() {
-  // On capture exactement ce que voit l'écran (même cadrage que "object-fit: cover")
   const sw = window.innerWidth, sh = window.innerHeight;
   const scale = Math.min(2, Math.max(1080 / Math.min(sw, sh), 1));
   const W = Math.round(sw * scale), H = Math.round(sh * scale);
@@ -239,13 +318,11 @@ function capture() {
   if (facing === 'user') { ctx.translate(W, 0); ctx.scale(-1, 1); }
   ctx.drawImage(video, (W - dw) / 2, (H - dh) / 2, dw, dh);
   ctx.restore();
-
   paintFrame(ctx, W, H);
 
-  // Flash
   const f = document.getElementById('flash');
   f.style.transition = 'none'; f.style.opacity = 1;
-  requestAnimationFrame(() => { f.style.transition = 'opacity .35s'; f.style.opacity = 0; });
+  requestAnimationFrame(() => { f.style.transition = 'opacity .4s'; f.style.opacity = 0; });
 
   c.toBlob(blob => {
     lastBlob = blob;
@@ -254,8 +331,6 @@ function capture() {
   }, 'image/jpeg', 0.92);
 }
 
-let lastBlob = null;
-let counting = false;
 async function shoot() {
   if (counting || !stream) return;
   if (timerOn) {
@@ -274,12 +349,10 @@ async function save() {
   if (!lastBlob) return;
   const name = `${CONFIG.nomFichier}-${Date.now()}.jpg`;
   const file = new File([lastBlob], name, { type: 'image/jpeg' });
-  // Sur smartphone : menu de partage natif (permet "Enregistrer l'image" dans la galerie)
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try { await navigator.share({ files: [file] }); return; }
     catch (e) { if (e.name === 'AbortError') return; }
   }
-  // Sinon : téléchargement classique
   const a = document.createElement('a');
   a.href = URL.createObjectURL(lastBlob);
   a.download = name;
@@ -291,15 +364,10 @@ async function save() {
 document.getElementById('startBtn').onclick = startCamera;
 document.getElementById('shutter').onclick = shoot;
 document.getElementById('switchBtn').onclick = () => { facing = facing === 'user' ? 'environment' : 'user'; startCamera(); };
-document.getElementById('timerBtn').onclick = (e) => {
-  timerOn = !timerOn;
-  e.currentTarget.style.background = timerOn ? 'var(--accent)' : 'rgba(0,0,0,.45)';
-};
+document.getElementById('timerBtn').onclick = e => { timerOn = !timerOn; e.currentTarget.classList.toggle('on', timerOn); };
 document.getElementById('retakeBtn').onclick = () => { document.getElementById('result').style.display = 'none'; };
 document.getElementById('saveBtn').onclick = save;
 
-/* Ouverture automatique de la caméra au chargement
-   (si le navigateur bloque, le bouton "Ouvrir l'appareil photo" reste affiché) */
 startCamera();
 </script>
 </body>
