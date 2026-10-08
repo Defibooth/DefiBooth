@@ -52,25 +52,31 @@
     text-shadow: 0 0 25px #000, 0 0 40px var(--orange);
   }
 
-  /* Écran résultat */
-  #result {
-    position: fixed; inset: 0; z-index: 10; display: none;
-    flex-direction: column; align-items: center; justify-content: center; gap: 18px;
-    padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
-    background: radial-gradient(ellipse at top, #3a1450, #0b0510 70%);
+  /* Écran résultat : la photo reste en plein écran, les boutons par-dessus en bas */
+  #result { position: fixed; inset: 0; z-index: 10; display: none; background: #000; }
+  #result img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  #result .panel {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    padding: 70px 16px calc(22px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, rgba(12,4,18,.97) 0%, rgba(12,4,18,.9) 60%, rgba(12,4,18,0) 100%);
   }
-  #result img { max-width: 100%; max-height: 62vh; border-radius: 8px; border: 3px solid var(--orange); box-shadow: 0 0 30px rgba(255,122,26,.45); }
-  #result .hint { font-size: 16px; opacity: .85; text-align: center; max-width: 340px; line-height: 1.4; }
-  #result .status { font-size: 17px; color: var(--vert); text-align: center; }
-  #result .status.err { color: #ff8a8a; }
-  #result .btn.big { width: 100%; max-width: 340px; font-size: 23px; padding: 20px 30px; }
+  #result .hint { font-size: clamp(17px, 4.6vw, 21px); text-align: center; max-width: 420px; line-height: 1.35; margin: 0; }
+  #result .status { font-size: clamp(18px, 5vw, 22px); font-weight: 600; color: var(--vert); text-align: center; margin: 0; text-shadow: 0 1px 4px #000; }
+  #result .status.err { color: #ff9a9a; }
+  #result .btn { width: 100%; max-width: 440px; font-size: clamp(20px, 5.6vw, 26px); padding: 20px 18px; }
+  #result .btn.big { font-size: clamp(23px, 6.6vw, 30px); padding: 24px 18px; }
+  #result .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 440px; }
+  #result .row .btn { width: 100%; white-space: nowrap; font-size: clamp(18px, 5vw, 24px); padding: 18px 10px; }
+  #result .row.single { grid-template-columns: 1fr; }
+  [hidden] { display: none !important; }
   .row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
   .btn {
     border: none; border-radius: 40px; padding: 18px 30px; cursor: pointer;
     font-family: "Cinzel", serif; font-size: 20px; font-weight: 600; letter-spacing: .5px;
     background: var(--orange); color: #1a0b24; box-shadow: 0 0 14px rgba(255,122,26,.6);
   }
-  .btn.secondary { background: transparent; color: #fff; border: 2px solid var(--violet-light); box-shadow: none; }
+  .btn.secondary { background: rgba(43,15,58,.85); color: #fff; border: 3px solid var(--violet-light); box-shadow: none; }
 
   /* Écran d'accueil */
   #start {
@@ -118,12 +124,14 @@
 
 <div id="result">
   <img id="photo" alt="Ta photo">
-  <p class="status" id="sendStatus" hidden></p>
-  <button class="btn big" id="saveBtn">📥 Enregistrer la photo</button>
-  <p class="hint" id="saveHint">Ta photo sera enregistrée sur ton téléphone.</p>
-  <div class="row">
-    <button class="btn secondary" id="retakeBtn">↺ Reprendre</button>
-    <button class="btn secondary" id="shareBtn" hidden>📤 Partager</button>
+  <div class="panel">
+    <p class="status" id="sendStatus" hidden></p>
+    <button class="btn big" id="saveBtn">📥 Enregistrer la photo</button>
+    <p class="hint" id="saveHint">Ta photo sera enregistrée sur ton téléphone.</p>
+    <div class="row">
+      <button class="btn secondary" id="retakeBtn">🔄 Reprendre</button>
+      <button class="btn secondary" id="shareBtn" hidden>📤 Partager</button>
+    </div>
   </div>
 </div>
 
@@ -136,6 +144,8 @@ const CONFIG = {
   date: "1er novembre 2026",
   lieu: "Saint-Chaptes",
   nomFichier: "marche-des-sorcieres",
+  // Nom du dossier Google Drive où arrivent les photos de cet événement
+  dossierDrive: "Photos Marché des Sorcières",
   // Adresse du script Google qui range les photos dans ton Google Drive (voir le guide).
   // Laisse "" pour désactiver l'envoi.
   urlEnvoi: "https://script.google.com/macros/s/AKfycbyDxFbVk5VjKqHWECnpjt9UBWVyByYAZvGKmPpk_ca00UqHjBgMtJnxQuYlUmT2Xwe8/exec",
@@ -339,7 +349,9 @@ function capture() {
     lastBlob = blob;
     document.getElementById('photo').src = URL.createObjectURL(blob);
     document.getElementById('result').style.display = 'flex';
-    document.getElementById('shareBtn').hidden = !canShareFile();
+    const canShare = canShareFile();
+    document.getElementById('shareBtn').hidden = !canShare;
+    document.querySelector('#result .row').classList.toggle('single', !canShare);
     document.getElementById('saveHint').textContent = isIOS
       ? "Appuie puis choisis « Enregistrer l'image » pour la garder dans tes Photos."
       : "Ta photo sera enregistrée dans ta Galerie.";
@@ -371,7 +383,7 @@ async function sendPhoto(blob, tries = 3) {
     r.onload = () => res(String(r.result).split(',')[1]);
     r.readAsDataURL(blob);
   });
-  const body = JSON.stringify({ name: `${CONFIG.nomFichier}-${Date.now()}.jpg`, image: base64 });
+  const body = JSON.stringify({ name: `${CONFIG.nomFichier}-${Date.now()}.jpg`, image: base64, dossier: CONFIG.dossierDrive });
   for (let i = 0; i < tries; i++) {
     try {
       // "text/plain" évite le blocage du navigateur ; le script Google lit le JSON quand même
