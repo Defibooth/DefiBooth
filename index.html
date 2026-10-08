@@ -59,14 +59,15 @@
     padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
     background: radial-gradient(ellipse at top, #3a1450, #0b0510 70%);
   }
-  #result img { max-width: 100%; max-height: 70vh; border-radius: 8px; border: 3px solid var(--orange); box-shadow: 0 0 30px rgba(255,122,26,.45); }
-  #result .hint { font-size: 13px; opacity: .8; text-align: center; max-width: 320px; }
-  #result .status { font-size: 14px; color: var(--vert); text-align: center; }
+  #result img { max-width: 100%; max-height: 62vh; border-radius: 8px; border: 3px solid var(--orange); box-shadow: 0 0 30px rgba(255,122,26,.45); }
+  #result .hint { font-size: 16px; opacity: .85; text-align: center; max-width: 340px; line-height: 1.4; }
+  #result .status { font-size: 17px; color: var(--vert); text-align: center; }
   #result .status.err { color: #ff8a8a; }
+  #result .btn.big { width: 100%; max-width: 340px; font-size: 23px; padding: 20px 30px; }
   .row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
   .btn {
-    border: none; border-radius: 30px; padding: 14px 26px; cursor: pointer;
-    font-family: "Cinzel", serif; font-size: 15px; font-weight: 600; letter-spacing: .5px;
+    border: none; border-radius: 40px; padding: 18px 30px; cursor: pointer;
+    font-family: "Cinzel", serif; font-size: 20px; font-weight: 600; letter-spacing: .5px;
     background: var(--orange); color: #1a0b24; box-shadow: 0 0 14px rgba(255,122,26,.6);
   }
   .btn.secondary { background: transparent; color: #fff; border: 2px solid var(--violet-light); box-shadow: none; }
@@ -118,10 +119,11 @@
 <div id="result">
   <img id="photo" alt="Ta photo">
   <p class="status" id="sendStatus" hidden></p>
-  <p class="hint" id="saveHint">Appuie sur « Enregistrer » pour garder ta photo dans ta galerie.</p>
+  <button class="btn big" id="saveBtn">📥 Enregistrer la photo</button>
+  <p class="hint" id="saveHint">Ta photo sera enregistrée sur ton téléphone.</p>
   <div class="row">
-    <button class="btn secondary" id="retakeBtn">Reprendre</button>
-    <button class="btn" id="saveBtn">Enregistrer</button>
+    <button class="btn secondary" id="retakeBtn">↺ Reprendre</button>
+    <button class="btn secondary" id="shareBtn" hidden>📤 Partager</button>
   </div>
 </div>
 
@@ -136,7 +138,7 @@ const CONFIG = {
   nomFichier: "marche-des-sorcieres",
   // Adresse du script Google qui range les photos dans ton Google Drive (voir le guide).
   // Laisse "" pour désactiver l'envoi.
-  urlEnvoi: "https://script.google.com/macros/s/AKfycby6pBG41D9tC992vltqtTB8qjPnHf9vN4Ak1gFOI-XwMl8hHBw3rBf1mp17rvNmWzWT/exec",
+  urlEnvoi: "https://script.google.com/macros/s/AKfycbyDxFbVk5VjKqHWECnpjt9UBWVyByYAZvGKmPpk_ca00UqHjBgMtJnxQuYlUmT2Xwe8/exec",
   cameraParDefaut: "user"   // "user" = selfie, "environment" = caméra arrière
 };
 /* ========================================================= */
@@ -337,6 +339,10 @@ function capture() {
     lastBlob = blob;
     document.getElementById('photo').src = URL.createObjectURL(blob);
     document.getElementById('result').style.display = 'flex';
+    document.getElementById('shareBtn').hidden = !canShareFile();
+    document.getElementById('saveHint').textContent = isIOS
+      ? "Appuie puis choisis « Enregistrer l'image » pour la garder dans tes Photos."
+      : "Ta photo sera enregistrée dans ta Galerie.";
     sendPhoto(blob);
   }, 'image/jpeg', 0.9);
 }
@@ -381,19 +387,34 @@ async function sendPhoto(blob, tries = 3) {
 }
 
 /* ---------- Enregistrer / partager ---------- */
-async function save() {
-  if (!lastBlob) return;
-  const name = `${CONFIG.nomFichier}-${Date.now()}.jpg`;
-  const file = new File([lastBlob], name, { type: 'image/jpeg' });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try { await navigator.share({ files: [file] }); return; }
-    catch (e) { if (e.name === 'AbortError') return; }
-  }
+const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+function photoFile() {
+  return new File([lastBlob], `${CONFIG.nomFichier}-${Date.now()}.jpg`, { type: 'image/jpeg' });
+}
+function canShareFile() {
+  try { return !!(navigator.canShare && navigator.canShare({ files: [photoFile()] })); } catch (e) { return false; }
+}
+function download() {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(lastBlob);
-  a.download = name;
+  a.download = photoFile().name;
   document.body.appendChild(a); a.click(); a.remove();
-  document.getElementById('saveHint').textContent = "Si rien ne se passe, reste appuyé sur la photo puis « Enregistrer l'image ».";
+}
+async function share() {
+  try { await navigator.share({ files: [photoFile()] }); return true; }
+  catch (e) { return e.name === 'AbortError'; }
+}
+async function save() {
+  if (!lastBlob) return;
+  const hint = document.getElementById('saveHint');
+  if (isIOS && canShareFile()) {
+    // iPhone : le menu de partage propose « Enregistrer l'image » (va dans Photos)
+    hint.textContent = "Choisis « Enregistrer l'image » dans le menu.";
+    if (await share()) return;
+  }
+  // Android et autres : enregistrement direct (dossier Téléchargements, visible dans la Galerie)
+  download();
+  hint.textContent = "✓ Photo enregistrée ! Retrouve-la dans ta Galerie (dossier Téléchargements). Si rien ne se passe, reste appuyé sur la photo puis « Télécharger l'image ».";
 }
 
 /* ---------- Boutons ---------- */
@@ -403,6 +424,7 @@ document.getElementById('switchBtn').onclick = () => { facing = facing === 'user
 document.getElementById('timerBtn').onclick = e => { timerOn = !timerOn; e.currentTarget.classList.toggle('on', timerOn); };
 document.getElementById('retakeBtn').onclick = () => { document.getElementById('result').style.display = 'none'; };
 document.getElementById('saveBtn').onclick = save;
+document.getElementById('shareBtn').onclick = () => { if (lastBlob) share(); };
 
 startCamera();
 </script>
